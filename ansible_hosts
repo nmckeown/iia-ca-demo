@@ -1,9 +1,4 @@
 [servers]
 mgmtinstance1.internal.tud ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
-10.0.2.4 ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
 websubnet1.internal.tud ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
 websubnet2.internal.tud ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
-10.0.5.4 ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
-10.0.6.4 ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
-10.0.7.4 ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
-10.0.8.4 ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
