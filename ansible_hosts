@@ -2,3 +2,7 @@
 mgmtinstance1.internal.tud ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
 websubnet1.internal.tud ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
 websubnet2.internal.tud ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
+
+[web]
+websubnet1.internal.tud ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
+websubnet2.internal.tud ansible_user=ubuntu ansible_python_interpreter=/usr/bin/python3
