@@ -13,7 +13,7 @@
 
     - name: Copy website files to the server's document root
       copy:
-        src: index.html
+        src: index.php
         dest: "{{ document_root }}"
         mode: preserve
 
