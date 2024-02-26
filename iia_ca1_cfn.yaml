@@ -1,0 +1,732 @@
+# Author: Noel McKeown (TUD)
+# Student Number: x00218705
+# Date: Mar-2024
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+  IT Infrastructure and Automation 1 March 2023
+  This template creates the AWS infrastructure for the IIA CA1 Assignment
+
+# template parameters
+Parameters:
+  StudentNumber:
+    Description: "Noel McKeown - x00218705"
+    Type: String
+    Default: "x00218705"
+  AvailabilityZone1:
+    Description: "Availability Zone 1"
+    Type: String
+    Default: "us-east-1a"
+  AvailabilityZone2:
+    Description: "Availability Zone 2"
+    Type: String
+    Default: "us-east-1b"
+  AWSRegion:
+    Description: "AWS Region"
+    Type: String
+    Default: "us-east-1"
+  HostedZoneName:
+    Description: "Hosted DNS Zone"
+    Type: String
+    Default: "internal.tud."
+  InstanceTypeSize:
+    Description: "Instance Type Size"
+    Type: String
+    Default: "t2.micro"
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: vockey # default key in vocareum/awslab
+  VpcCIDR:
+    Description: "IP range (CIDR notation) for this VPC"
+    Type: String
+    Default: "10.0.0.0/16"
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+  Mgmt1SubnetCIDR:
+    Description: "IP range (CIDR notation) for this Mangment Subnet 1"
+    Type: String
+    Default: "10.0.1.0/24"
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+  Mgmt2SubnetCIDR:
+    Description: "IP range (CIDR notation) for this Mangment Subnet 2"
+    Type: String
+    Default: "10.0.2.0/24"
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+  Web1SubnetCIDR:
+    Description: "IP range (CIDR notation) for this Web Subnet 1"
+    Type: String
+    Default: "10.0.3.0/24"
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+  Web2SubnetCIDR:
+    Description: "IP range (CIDR notation) for this Web Subnet 2"
+    Type: String
+    Default: "10.0.4.0/24"
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+  App1SubnetCIDR:
+    Description: "IP range (CIDR notation) for this App Subnet 1"
+    Type: String
+    Default: "10.0.5.0/24"
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+  App2SubnetCIDR:
+    Description: "IP range (CIDR notation) for this App Subnet 2"
+    Type: String
+    Default: "10.0.6.0/24"
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+  Rds1SubnetCIDR:
+    Description: "IP range (CIDR notation) for this RDS Subnet 1"
+    Type: String
+    Default: "10.0.7.0/24"
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+  Rds2SubnetCIDR:
+    Description: "IP range (CIDR notation) for this RDS Subnet 2"
+    Type: String
+    Default: "10.0.8.0/24"
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+
+# template mappings
+Mappings:
+  AMIRegionMap: 
+    us-east-1:
+      ubuntu: ami-0557a15b87f6559cf
+  Admins:
+    sshPublicKey:
+      ubuntu: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQChAGRD1xvM/uz2fXnOu3VpEX4irSgKoVNdYx6iUQv/GjyGuD6kHZzrKmxldNsj1eGfM89Nx0zrTEE6X4gLvPW2hKxL9L09ucXS/KoqE6M0SFTQGYF2n8rIYaT8bgSZ0AUmlPjGxHJ8HZL4WAfccyggzNoL+UGSSxp3NiJ1OaeLZJy0xrYqSN4Vh1QSMU2GFQNwbSAo8FejICYN1j76dUt3Ezi/g8cu1zUCuDs9RR6WCToA92jrxSQWe7lpLrUnE0lOB7AnxMg+dotIbYLqXFQDwdUCZnhFABIUt5Ip9S3/aJmT23yoEegzX3U2lYZdk4lbmByQE9Ocw/ttEcPzbeZP ubuntu"
+      vockey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQChAGRD1xvM/uz2fXnOu3VpEX4irSgKoVNdYx6iUQv/GjyGuD6kHZzrKmxldNsj1eGfM89Nx0zrTEE6X4gLvPW2hKxL9L09ucXS/KoqE6M0SFTQGYF2n8rIYaT8bgSZ0AUmlPjGxHJ8HZL4WAfccyggzNoL+UGSSxp3NiJ1OaeLZJy0xrYqSN4Vh1QSMU2GFQNwbSAo8FejICYN1j76dUt3Ezi/g8cu1zUCuDs9RR6WCToA92jrxSQWe7lpLrUnE0lOB7AnxMg+dotIbYLqXFQDwdUCZnhFABIUt5Ip9S3/aJmT23yoEegzX3U2lYZdk4lbmByQE9Ocw/ttEcPzbeZP vockey"
+  PrivateIPs:
+    mgmtIPv4:
+      mgmt1:  "10.0.1.4"
+      mgmt2:  "10.0.2.4"
+    webIPv4:
+      web1:  "10.0.3.4"
+      web2:  "10.0.4.4"
+    appIPv4:
+      app1:  "10.0.5.4"
+      app2: "10.0.6.4"
+    rdsIPv4:
+      rds1: "10.0.7.4" 
+      rds2: "10.0.8.4"
+
+Resources:
+  # Virtual Private Cloud
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref 'VpcCIDR'
+      InstanceTenancy: default
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [VPC, !Ref 'StudentNumber']]
+
+  # Domain Name Services
+  HostedZoneDNS: 
+    Type: "AWS::Route53::HostedZone"
+    Properties: 
+      HostedZoneConfig: 
+        Comment: 'Private Hosted Zone for IIA CA'
+      Name: !Ref 'HostedZoneName'
+      VPCs: 
+        - 
+          VPCId: !Ref 'VPC'
+          VPCRegion: !Ref 'AWSRegion'
+
+  PrivateDNS:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      Comment: "Creating Internal EC2 Records For Management Hosts" 
+      HostedZoneName: !Ref 'HostedZoneName'
+      RecordSets:
+      - Name: MgmtInstance1.internal.tud
+        ResourceRecords: 
+        - !GetAtt MgmtInstance1.PrivateIp
+        TTL: '900'
+        Type: A
+      - Name: WebSubnet1.internal.tud
+        ResourceRecords: 
+        - !GetAtt WebInstance1.PrivateIp
+        TTL: '900'
+        Type: A
+      - Name: WebSubnet2.internal.tud
+        ResourceRecords: 
+        - !GetAtt WebInstance2.PrivateIp
+        TTL: '900'
+        Type: A
+
+  # Subnets
+  MgmtSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref 'Mgmt1SubnetCIDR'
+      AvailabilityZone: !Ref 'AvailabilityZone1'
+      MapPublicIpOnLaunch: 'True'
+      VpcId: !Ref 'VPC'
+      #PrivateDnsNameOptionsOnLaunch:
+      #  EnableResourceNameDnsARecord: true
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [MgmtSubnet1, !Ref 'StudentNumber']]
+
+  MgmtSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref 'Mgmt2SubnetCIDR'
+      AvailabilityZone: !Ref 'AvailabilityZone2'
+      MapPublicIpOnLaunch: 'True'
+      VpcId: !Ref 'VPC'
+      #PrivateDnsNameOptionsOnLaunch:
+      #  EnableResourceNameDnsARecord: true
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [MgmtSubnet2, !Ref 'StudentNumber']]
+
+  WebSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref 'Web1SubnetCIDR'
+      AvailabilityZone: !Ref 'AvailabilityZone1'
+      MapPublicIpOnLaunch: 'True'
+      VpcId: !Ref 'VPC'
+      #PrivateDnsNameOptionsOnLaunch:
+      #  EnableResourceNameDnsARecord: true
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [WebSubnet1, !Ref 'StudentNumber']]
+
+  WebSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref 'Web2SubnetCIDR'
+      AvailabilityZone: !Ref 'AvailabilityZone2'
+      MapPublicIpOnLaunch: 'True'
+      VpcId: !Ref 'VPC'
+      #PrivateDnsNameOptionsOnLaunch:
+      #  EnableResourceNameDnsARecord: true
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [WebSubnet2, !Ref 'StudentNumber']]
+
+  AppSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref 'App1SubnetCIDR'
+      AvailabilityZone: !Ref 'AvailabilityZone1'
+      VpcId: !Ref 'VPC'
+      #PrivateDnsNameOptionsOnLaunch:
+      #  EnableResourceNameDnsARecord: true
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [AppSubnet1, !Ref 'StudentNumber']]
+
+  AppSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref 'App2SubnetCIDR'
+      AvailabilityZone: !Ref 'AvailabilityZone2'
+      VpcId: !Ref 'VPC'
+      #PrivateDnsNameOptionsOnLaunch:
+      #  EnableResourceNameDnsARecord: true
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [AppSubnet2, !Ref 'StudentNumber']]
+
+  RdsSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref 'Rds1SubnetCIDR'
+      AvailabilityZone: !Ref 'AvailabilityZone1'
+      VpcId: !Ref 'VPC'
+      #PrivateDnsNameOptionsOnLaunch:
+      #  EnableResourceNameDnsARecord: true
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [RdsSubnet1, !Ref 'StudentNumber']]
+
+  RdsSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref 'Rds2SubnetCIDR'
+      AvailabilityZone: !Ref 'AvailabilityZone2'
+      VpcId: !Ref 'VPC'
+      #PrivateDnsNameOptionsOnLaunch:
+      #  EnableResourceNameDnsARecord: true
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [RdsSubnet2, !Ref 'StudentNumber']]
+
+  # Internet Gateway
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [IGW, !Ref 'StudentNumber']]
+  
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref 'VPC'
+      InternetGatewayId: !Ref 'IGW'
+
+  # NAT Gateway
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: IGWAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref MgmtSubnet1
+
+  # Network Routes
+  RouteMgmt:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [RouteMgmt, !Ref 'StudentNumber']]
+
+  RouteWeb:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [RouteWeb, !Ref 'StudentNumber']]
+
+  RouteApp:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [RouteApp, !Ref 'StudentNumber']]
+
+  RouteRDS:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [RouteRDS, !Ref 'StudentNumber']]
+
+  SubnetRouteMgmtA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref 'RouteMgmt'
+      SubnetId: !Ref 'MgmtSubnet1'
+
+  SubnetRouteMgmtB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref 'RouteMgmt'
+      SubnetId: !Ref 'MgmtSubnet2'
+
+  SubnetRouteWebA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref 'RouteWeb'
+      SubnetId: !Ref 'WebSubnet1'
+
+  SubnetRouteWebB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref 'RouteWeb'
+      SubnetId: !Ref 'WebSubnet2'
+
+  SubnetRouteAppA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref 'RouteApp'
+      SubnetId: !Ref 'AppSubnet1'
+
+  SubnetRouteAppB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref 'RouteApp'
+      SubnetId: !Ref 'AppSubnet2'
+
+  SubnetRouteRdsA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref 'RouteRDS'
+      SubnetId: !Ref 'RdsSubnet1'
+
+  SubnetRouteRdsB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref 'RouteRDS'
+      SubnetId: !Ref 'RdsSubnet2'
+
+  PublicRouteMgmt:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref 'RouteMgmt'
+      GatewayId: !Ref 'IGW'
+    DependsOn: IGW
+  
+  PublicRouteWeb:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref 'RouteWeb'
+      GatewayId: !Ref 'IGW'
+    DependsOn: IGW
+
+  # EC2 Instances
+  MgmtInstance1:
+    Type: AWS::EC2::Instance
+    Metadata: 
+      AWS::CloudFormation::Init: 
+        config:
+          files: 
+            '/home/ubuntu/.ssh/authorized_keys': 
+              content: !FindInMap [Admins, sshPublicKey, ubuntu]
+              mode: "000600"
+              owner: "ubuntu"
+              group: "ubuntu"
+    Properties:
+      AvailabilityZone: !Ref 'AvailabilityZone1'
+      InstanceType: !Ref 'InstanceTypeSize'
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap [AMIRegionMap, !Ref "AWS::Region", ubuntu]
+      PrivateIpAddress: !FindInMap [PrivateIPs, mgmtIPv4, mgmt1]
+      SecurityGroupIds:
+        - !Ref SGMGMT
+      SubnetId: !Ref MgmtSubnet1
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo apt-get install software-properties-common -y
+          sudo apt-add-repository ppa:ansible/ansible -y
+          sudo apt-get update -y
+          sudo apt-get install ansible -y
+          sudo apt-get install awscli -y
+          TERRAFORM_LATEST=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | awk -F[:] '{print $6}' | awk -F[/] '{print $5}' | awk -F[,] '{print $1}' | sed 's/.$//')
+          wget https://releases.hashicorp.com/terraform/$TERRAFORM_LATEST/terraform_"$TERRAFORM_LATEST"_linux_386.zip
+          sudo apt-get install unzip -y
+          unzip terraform_"$TERRAFORM_LATEST"_linux_386.zip
+          sudo mv terraform /usr/local/bin/
+          sudo rm terraform_"$TERRAFORM_LATEST"_linux_386.zip
+          sudo apt install git-all -y
+          # SETUP ANSIBLE
+          echo "export ANSIBLE_HOST_KEY_CHECKING=False" >> /home/ubuntu/.bashrc
+          git clone https://github.com/nmckeown/iia-ca-demo.git /home/ubuntu/iia-ca-demo/
+          chown -R ubuntu:ubuntu /home/ubuntu/iia-ca-demo/
+          chown -R ubuntu:ubuntu /etc/ansible/
+          cat /home/ubuntu/iia-ca-demo/ansible_hosts >> /etc/ansible/hosts
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [MgmtInstance1, !Ref 'StudentNumber']]
+
+
+  WebInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !Ref 'AvailabilityZone1'
+      InstanceType: !Ref 'InstanceTypeSize'
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap [AMIRegionMap, !Ref "AWS::Region", ubuntu]
+      PrivateIpAddress: !FindInMap [PrivateIPs, webIPv4, web1]
+      SecurityGroupIds:
+        - !Ref SGWEB   
+      SubnetId: !Ref WebSubnet1
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo apt-get install software-properties-common -y
+          sudo apt-get update -y
+          sudo apt-get install nginx -y
+          sudo apt-get install awscli -y    
+          sudo ufw allow 'Nginx HTTP'
+          sudo DEBIAN_FRONTEND=noninteractive apt install php-fpm -y
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [WebInstance1, !Ref 'StudentNumber']] 
+    Metadata: 
+      AWS::CloudFormation::Init: 
+        config:
+          files: 
+            /home/ubuntu/.ssh/authorized_keys: 
+              content: !Sub |
+                !FindInMap [Admins, sshPublicKey, ubuntu]
+              mode: "000600"
+              owner: "ubuntu"
+              group: "ubuntu"
+
+  WebInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !Ref 'AvailabilityZone2'
+      InstanceType: !Ref 'InstanceTypeSize'
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap [AMIRegionMap, !Ref "AWS::Region", ubuntu]
+      PrivateIpAddress: !FindInMap [PrivateIPs, webIPv4, web2]
+      SecurityGroupIds:
+        - !Ref SGWEB
+      SubnetId: !Ref WebSubnet2
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo apt-get install software-properties-common -y
+          sudo apt-get update -y
+          sudo apt-get install nginx -y
+          sudo apt-get install awscli -y
+          sudo ufw allow 'Nginx HTTP'
+          sudo DEBIAN_FRONTEND=noninteractive apt install php-fpm -y
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [WebInstance2, !Ref 'StudentNumber']]
+    Metadata: 
+      AWS::CloudFormation::Init: 
+        config:
+          files: 
+            /home/ubuntu/.ssh/authorized_keys: 
+              content: !Sub |
+                !FindInMap [Admins, sshPublicKey, ubuntu]
+              mode: "000600"
+              owner: "ubuntu"
+              group: "ubuntu"
+
+  # Security Groups (Firewalls)
+  SGMGMT:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow SSH"
+      VpcId: !Ref 'VPC'
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+      SecurityGroupEgress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+      - CidrIp: 0.0.0.0/0
+        FromPort: 80
+        IpProtocol: tcp
+        ToPort: 80            
+      - CidrIp: 0.0.0.0/0
+        FromPort: 443
+        IpProtocol: tcp
+        ToPort: 443      
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [SGMGMT, !Ref 'StudentNumber']]
+
+  SGWEB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:  "CA - Web Security Group"
+      VpcId: !Ref 'VPC'
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        SourceSecurityGroupId: !Ref SGELB
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        SourceSecurityGroupId: !Ref SGMGMT
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: "0.0.0.0/0"
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        SourceSecurityGroupId: !Ref SGMGMT
+      SecurityGroupEgress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: 22
+        IpProtocol: tcp
+        ToPort: 22
+      - CidrIp: 0.0.0.0/0
+        FromPort: 80
+        IpProtocol: tcp
+        ToPort: 80
+      - CidrIp: 0.0.0.0/0
+        FromPort: 443
+        IpProtocol: tcp
+        ToPort: 443    
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [SGWEB, !Ref 'StudentNumber']] 
+
+  SGELB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription:  "CA - ELB Security Group"
+      VpcId: !Ref 'VPC'
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80 
+      - CidrIp: "0.0.0.0/0"  
+        IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [SGELB, !Ref 'StudentNumber']] 
+
+  # Load Balancers
+  ELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      Subnets: [!Ref 'WebSubnet1', !Ref 'WebSubnet2']
+      Instances: [!Ref 'WebInstance1', !Ref 'WebInstance2']
+      SecurityGroups: [!Ref 'SGELB']
+      CrossZone: true
+      Listeners:
+      - LoadBalancerPort: '80'
+        InstancePort: '80'
+        Protocol: HTTP
+      HealthCheck:
+        HealthyThreshold: '2'
+        Interval: '15'
+        Target: HTTP:80/index.php
+        Timeout: '5'
+        UnhealthyThreshold: '2'
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [ELB, !Ref 'StudentNumber']]
+
+  # Network Acess Control List
+  NetworkACL:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: environment
+          Value: iia-continuous-assignment
+        - Key: Name
+          Value: !Join ['-', [NACL, !Ref 'StudentNumber']]
+
+  NACLEntry1:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Egress: 'true'
+      Protocol: '-1'
+      RuleAction: allow
+      RuleNumber: '100'
+      NetworkAclId: !Ref 'NetworkACL'
+
+  NACLEntry2:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      CidrBlock: 0.0.0.0/0
+      Protocol: '-1'
+      RuleAction: allow
+      RuleNumber: '100'
+      NetworkAclId: !Ref 'NetworkACL'
+
+  # Subnet Acess Control List
+  MgmtSubnet1CL1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref 'NetworkACL'
+      SubnetId: !Ref 'MgmtSubnet1'
+
+  MgmtSubnet1CL2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref 'NetworkACL'
+      SubnetId: !Ref 'MgmtSubnet2'
+      
+  WebSubnet1CL1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref 'NetworkACL'
+      SubnetId: !Ref 'WebSubnet1'
+
+  WebSubnet1CL2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref 'NetworkACL'
+      SubnetId: !Ref 'WebSubnet2'
+
+  AppSubnet1CL1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref 'NetworkACL'
+      SubnetId: !Ref 'AppSubnet1'
+      
+  AppSubnet1CL2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref 'NetworkACL'
+      SubnetId: !Ref 'AppSubnet2'
+
+  RdsSubnet1CL1:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref 'NetworkACL'
+      SubnetId: !Ref 'RdsSubnet1'
+
+  RdsSubnet1CL2:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      NetworkAclId: !Ref 'NetworkACL'
+      SubnetId: !Ref 'RdsSubnet2'
+
+Outputs:
+  LoadBalancerDNSName:
+    Description: "The DNSName of the load balancer"
+    Value: !GetAtt ELB.DNSName
+    Export:
+      Name: !Join ['-', [LoadBalancerDNSName, !Ref 'StudentNumber']]
+  MgmtInst1PublicIP:
+    Description: "The public IP of MgmtInstance1"
+    Value: !GetAtt MgmtInstance1.PublicIp
+    Export:
+      Name: !Join ['-', [MgmtInst1PublicIP, !Ref 'StudentNumber']]
