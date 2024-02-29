@@ -1,9 +1,9 @@
 # Author: Noel McKeown (TUD)
 # Student Number: x00218705
-# Date: Mar-2024
+# Date: 02-Mar-2024
 AWSTemplateFormatVersion: '2010-09-09'
 Description:
-  IT Infrastructure and Automation 1 March 2023
+  IT Infrastructure and Automation 02 March 2024
   This template creates the AWS infrastructure for the IIA CA1 Assignment
 
 # template parameters
