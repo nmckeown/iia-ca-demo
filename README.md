@@ -16,7 +16,7 @@ chmod 400 labuser.pem && ssh-add labuser.pem\
 
 ## ansible checks
 ansible servers -m ping\
-ansible web -m ping\
+ansible web -m ping
 
 ## run automation
 cd iia-ca-demo\
