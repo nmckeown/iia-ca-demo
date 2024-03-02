@@ -3,8 +3,8 @@
 ## cloudformation commands
 update ~/.aws/credentials\
 aws cloudformation validate-template --template-body iia_ca1_cfn.yaml\
-aws cloudformation create-stack --stack-name iia_ca1 --region us-east-1 --tags Key=Name,Value=iia_ca1 --template-body iia_ca1_cfn.yaml\
-aws cloudformation delete-stack --stack-name iia_ca1 --region us-east-1
+aws cloudformation create-stack --stack-name iiaca1 --region us-east-1 --tags Key=Name,Value=iia_ca1 --template-body iia_ca1_cfn.yaml\
+aws cloudformation delete-stack --stack-name iiaca1 --region us-east-1
 
 # demo
 ## ssh to management host, public IP in CF outputs
