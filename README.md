@@ -16,7 +16,7 @@ cd ~ && eval `ssh-agent -s` && vi labuser.pem\
 chmod 400 labuser.pem && ssh-add labuser.pem
 
 ## ansible checks
-cat /etc/ansible/hosts
+cat /etc/ansible/hosts\
 ansible servers -m ping\
 ansible web -m ping
 
