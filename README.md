@@ -5,8 +5,8 @@ aws cloudformation validate-template --template-body\
 aws cloudformation create-stack --stack-name ca1 --region us-east-1 --tags Key=Name,Value=ca1 --template-body\
 aws cloudformation delete-stack --stack-name ca1 --region us-east-1
 
-## demo
-### ssh to management host, public IP in CF outputs
+# demo
+## ssh to management host, public IP in CF outputs
 ssh -i labuser.pem ubuntu@websubnet1.internal.tud
 
 ## on managment host, setup SSH agent
