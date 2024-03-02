@@ -2,7 +2,7 @@
 
 ## cloudformation commands
 aws cloudformation validate-template --template-body iia_ca1_cfn.yaml\
-aws cloudformation create-stack --stack-name iia_ca1 --region us-east-1 --tags Key=Name,Value=ca1 --template-body iia_ca1_cfn.yaml\
+aws cloudformation create-stack --stack-name iia_ca1 --region us-east-1 --tags Key=Name,Value=iia_ca1 --template-body iia_ca1_cfn.yaml\
 aws cloudformation delete-stack --stack-name iia_ca1 --region us-east-1
 
 # demo
