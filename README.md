@@ -8,7 +8,7 @@ aws cloudformation delete-stack --stack-name iiaca1 --region us-east-1
 
 # demo
 ## ssh to management host, public IP in CF outputs
-ssh -i labuser.pem ubuntu@websubnet1.internal.tud
+ssh -i labuser.pem ubuntu@<public_ip>
 
 ## on managment host, setup SSH agent
 source ~/.bashrc\
