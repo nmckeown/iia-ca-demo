@@ -12,7 +12,7 @@ ssh -i labuser.pem ubuntu@websubnet1.internal.tud
 ## on managment host, setup SSH agent
 source ~/.bashrc\
 cd ~ && eval `ssh-agent -s` && vi labuser.pem\
-chmod 400 labuser.pem && ssh-add labuser.pem\
+chmod 400 labuser.pem && ssh-add labuser.pem
 
 ## ansible checks
 ansible servers -m ping\
