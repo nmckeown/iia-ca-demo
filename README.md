@@ -23,6 +23,6 @@ ansible web -m ping
 ## run automation
 cd iia-ca-demo\
 ansible-playbook patch-playbook.yaml\
-ansible-playbook nginx-playbook.yaml
+ansible-playbook nginx-playbook.yaml && ansible-playbook nginx-playbook.yaml
 
 ## connect to load balancer URL provided in CF outputs
